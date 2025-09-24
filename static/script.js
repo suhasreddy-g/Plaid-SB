@@ -3,7 +3,7 @@ console.log('Script is running!');
 
 // This function fetches the link_token from your backend.
 async function getLinkToken() {
-    const response = await fetch('http://127.0.0.1:5000/create_link_token', {
+    const response = await fetch('https://plaid-sb.onrender.com/create_link_token', {
         method: 'POST',
     });
     console.log('Raw response:', response);
@@ -24,7 +24,7 @@ linkButton.addEventListener('click', async () => {
         onSuccess: async (public_token, metadata) => {
             // When the user successfully links their account,
             // exchange the public token with your backend.
-            await fetch('http://127.0.0.1:5000/exchange_public_token', {
+            await fetch('https://plaid-sb.onrender.com/exchange_public_token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
