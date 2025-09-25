@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import plaid
 from plaid import Environment
 from plaid.api import plaid_api
+from datetime import datetime, timedelta
 
 # -----------------
 # 1. Server Setup
@@ -65,10 +66,11 @@ def create_link_token():
         # This syntax is slightly different in the new library version.
         link_token_request = {
             'user': {'client_user_id': user_id},
-            'client_name': 'My Finance App',
+            'client_name': 'Suhas Test App',
             'products': ['auth', 'transactions'],
             'country_codes': ['US'],
             'language': 'en',
+            "webhook": 'https://whf3c5828f4f8d0e46b2.free.beeceptor.com',
         }
         link_token_response = client.link_token_create(link_token_request)
         link_token = link_token_response.get('link_token')
@@ -102,27 +104,52 @@ def exchange_public_token():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/get_transactions', methods=['GET'])
+
+
+@app.route('/get_transactions', methods=['POST'])
 def get_transactions():
     """
-    Fetches the latest transactions using the stored access_token.
+    Exchanges the public token for an access token and fetches transactions.
     """
-    global access_token
-    if not access_token:
-        return jsonify({'error': 'Access token not available. Please link an item first.'}), 400
+    data = request.get_json()
+
+    # 1. Get input values from the frontend
+    access_token = data.get('accessToken')
+    start_date_str = data.get('startDate')
+    end_date_str = data.get('endDate')
+
+    if not all([access_token, start_date_str, end_date_str]):
+        return jsonify({'error': 'Missing required fields (token or dates).'}), 400
 
     try:
-        # Fetch transaction data from the Plaid API.
-        transactions_request = {'access_token': access_token}
-        transactions_response = client.transactions_sync(transactions_request)
+        # Convert date strings (YYYY-MM-DD) to Plaid's required format (YYYY-MM-DD)
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
 
-        # In a real application, you would handle pagination and cursor-based syncing.
-        transactions = transactions_response.get('added', [])
+        # 2. Call Plaid /transactions/get
+        response = client.Transactions.get(
+            access_token=access_token,
+            start_date=start_date.strftime('%Y-%m-%d'),
+            end_date=end_date.strftime('%Y-%m-%d')
+        )
 
-        return jsonify({'transactions': transactions})
+        transactions = response['transactions']
+        total_transactions = len(transactions)
+
+        return jsonify({
+            'success': True,
+            'total_count': total_transactions,
+            'transactions': transactions
+        })
 
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Plaid Error: {e}")
+        return jsonify({'error': f'Plaid API call failed: {str(e)}'}), 500
+
+
+if __name__ == '__main__':
+    # You may need to install Flask: pip install Flask plaid
+    app.run(port=8000, debug=True)
 
 
 # -----------------
@@ -131,4 +158,4 @@ def get_transactions():
 
 if __name__ == '__main__':
     # Flask runs on port 5000 by default.
-    app.run(port=5000, debug=True)
+    app.run(port=8000, debug=True)

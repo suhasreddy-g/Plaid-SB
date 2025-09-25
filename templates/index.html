@@ -8,6 +8,24 @@
     <h1>Plaid Integration</h1>
     <button id="link-button">Connect a Bank Account</button>
 
+     <h1>Get Plaid Transactions</h1>
+
+    <form id="transactionForm">
+        <label for="accessToken">Access Token:</label>
+        <input type="text" id="accessToken" placeholder="Paste Access Token here..." required>
+
+        <label for="startDate">Start Date:</label>
+        <input type="date" id="startDate" required>
+
+        <label for="endDate">End Date:</label>
+        <input type="date" id="endDate" required>
+
+        <button type="submit" id="submitButton">Fetch Transactions</button>
+    </form>
+
+    <h2>Results:</h2>
+    <div id="results">Waiting for input...</div>
+
     <script src="../static/script.js"></script>
 </body>
 </html>

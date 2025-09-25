@@ -45,3 +45,76 @@ linkButton.addEventListener('click', async () => {
     // Open Plaid Link.
     handler.open();
 });
+
+
+document.getElementById('transactionForm').addEventListener('submit', async function(event) {
+    event.preventDefault(); // Prevent default form submission
+
+    const resultsDiv = document.getElementById('results');
+    const submitButton = document.getElementById('submitButton');
+
+    // 1. Collect Input Data
+    const accessToken = document.getElementById('accessToken').value.trim();
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!accessToken || !startDate || !endDate) {
+        resultsDiv.innerHTML = '<p class="error">Please fill in all fields.</p>';
+        return;
+    }
+
+    // Prepare UI for loading state
+    resultsDiv.innerHTML = '<p>Fetching transactions... please wait.</p>';
+    submitButton.disabled = true;
+
+    // 2. Prepare Payload for Python backend
+    const payload = {
+        accessToken: accessToken,
+        startDate: startDate,
+        endDate: endDate
+    };
+
+    // 3. Send POST request to your Python backend
+    try {
+        const response = await fetch('https://plaid-sb.onrender.com/get_transactions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+
+        // 4. Handle Response
+        if (response.ok && data.success) {
+            // Success: Display formatted transactions
+            resultsDiv.innerHTML = `<p class="success">✅ Successfully retrieved ${data.total_count} transactions.</p>`;
+            resultsDiv.innerHTML += '<h3>Transaction List:</h3>';
+
+            // Format transactions for display
+            let transactionHtml = '<ul>';
+            data.transactions.forEach(t => {
+                const amount = t.amount.toFixed(2);
+                transactionHtml += `
+                    <li>
+                        <strong>${t.date}</strong>: ${t.name} ($${amount}) - ${t.transaction_type}
+                    </li>`;
+            });
+            transactionHtml += '</ul>';
+            resultsDiv.innerHTML += transactionHtml;
+
+        } else {
+            // API Error (e.g., Plaid credentials failed)
+            const errorMsg = data.error || 'Unknown error occurred.';
+            resultsDiv.innerHTML = `<p class="error">❌ Error: ${errorMsg}</p>`;
+        }
+
+    } catch (error) {
+        // Network or fetch error (e.g., Python server is not running)
+        resultsDiv.innerHTML = `<p class="error">❌ Network Error: Could not connect to the Python server. Make sure main.py is running on port 8000.</p>`;
+        console.error('Fetch error:', error);
+    } finally {
+        submitButton.disabled = false;
+    }
+});
