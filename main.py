@@ -103,59 +103,10 @@ def exchange_public_token():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-
-
-@app.route('/get_transactions', methods=['POST'])
-def get_transactions():
-    """
-    Exchanges the public token for an access token and fetches transactions.
-    """
-    data = request.get_json()
-
-    # 1. Get input values from the frontend
-    access_token = data.get('accessToken')
-    start_date_str = data.get('startDate')
-    end_date_str = data.get('endDate')
-
-    if not all([access_token, start_date_str, end_date_str]):
-        return jsonify({'error': 'Missing required fields (token or dates).'}), 400
-
-    try:
-        # Convert date strings (YYYY-MM-DD) to Plaid's required format (YYYY-MM-DD)
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
-
-        # 2. Call Plaid /transactions/get
-        response = client.Transactions.get(
-            access_token=access_token,
-            start_date=start_date.strftime('%Y-%m-%d'),
-            end_date=end_date.strftime('%Y-%m-%d')
-        )
-
-        transactions = response['transactions']
-        total_transactions = len(transactions)
-
-        return jsonify({
-            'success': True,
-            'total_count': total_transactions,
-            'transactions': transactions
-        })
-
-    except Exception as e:
-        print(f"Plaid Error: {e}")
-        return jsonify({'error': f'Plaid API call failed: {str(e)}'}), 500
-
-
-if __name__ == '__main__':
-    # You may need to install Flask: pip install Flask plaid
-    app.run(port=8000, debug=True)
-
-
 # -----------------
 # 4. Run the App
 # -----------------
 
 if __name__ == '__main__':
     # Flask runs on port 5000 by default.
-    app.run(port=8000, debug=True)
+    app.run(port=5000, debug=True)
